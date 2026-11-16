@@ -38,6 +38,8 @@
   nav.tabs button { flex: 1; border: 0; background: none; padding: 6px 0; color: var(--muted); font-size: 12px; font-weight: 600; }
   nav.tabs button .ic { display: block; font-size: 22px; line-height: 1.2; }
   nav.tabs button.on { color: var(--accent); }
+  nav.tabs button .ic { position: relative; }
+  nav.tabs .dot { position: absolute; top: 0; right: calc(50% - 16px); width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
   .btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 600; background: var(--accent); color: #fff; }
   .btn.secondary { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
   .btn.ghost { background: transparent; color: var(--accent); padding: 8px 10px; }
@@ -99,6 +101,11 @@
   .tile .tx { padding: 8px 10px 10px; }
   .tile .nm { font-weight: 650; font-size: 14px; line-height: 1.25; }
   .tile .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .idea { background: var(--card); border-radius: 16px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(60,40,20,.08); }
+  .idea .ph, .idea .placeholder { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: flex; }
+  .idea .tx { padding: 12px 14px 12px; }
+  .idea .nm { font-size: 18px; font-weight: 700; line-height: 1.25; }
+  .why { background: var(--accent-soft); color: #7a3417; border-radius: 10px; padding: 8px 10px; font-size: 14px; margin-top: 8px; }
   .fab { position: fixed; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 25; border-radius: 999px; padding: 14px 18px;
     box-shadow: 0 6px 18px rgba(181,83,46,.35); }
 
@@ -167,6 +174,7 @@
 <nav class="tabs" id="tabs">
   <button data-tab="week" class="on"><span class="ic">🍽️</span>This Week</button>
   <button data-tab="recipes"><span class="ic">📖</span>Recipes</button>
+  <button data-tab="ideas"><span class="ic">💡</span>Ideas</button>
   <button data-tab="list"><span class="ic">🛒</span>List</button>
 </nav>
 <div class="scrim" id="scrim"></div>
@@ -232,6 +240,8 @@ function subline(r) {
 function boot() {
   api('apiBootstrap').then(function (b) {
     S.recipes = b.recipes; S.settings = b.settings; S.today = b.today; S.ws = b.defaultWeek; S.sheetUrl = b.sheetUrl; S.pending = b.pending;
+    S.aiReady = b.aiReady;
+    if (b.newIdeas) { var ib = document.querySelector('nav.tabs button[data-tab=ideas] .ic'); if (ib) ib.innerHTML = '💡<span class="dot"></span>'; }
     indexRecipes();
     return loadWeek();
   }).then(function () {
@@ -269,6 +279,7 @@ function setTab(t) {
   Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
   window.scrollTo(0, 0);
   if (t === 'list') { S.shopping = null; render(); loadShopping().then(render).catch(fail); }
+  else if (t === 'ideas') { render(); loadIdeas().then(render).catch(fail); }
   else render();
 }
 Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function (b) {
@@ -291,13 +302,14 @@ function render() {
         '<button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙️</button></div>' +
         '<div class="weeknav"><button onclick="shiftWeek(-1)">‹</button><div class="lbl">' + weekLabel(S.ws) + '</div><button onclick="shiftWeek(1)">›</button></div>';
   } else {
-    h = '<div class="hrow"><h1>Recipes</h1><button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙️</button></div>';
+    h = '<div class="hrow"><h1>' + (S.tab === 'ideas' ? 'Ideas' : 'Recipes') + '</h1><button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙️</button></div>';
   }
   $('hdr').innerHTML = h;
   var m = '';
   if (S.pending) m += '<div class="banner"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> Pulling photos and ingredients from linked recipes (' + S.pending + ' left)...</div>';
   if (S.tab === 'week') m += renderWeek();
   else if (S.tab === 'recipes') m += renderRecipes();
+  else if (S.tab === 'ideas') m += renderIdeas();
   else m += renderList();
   $('main').innerHTML = m;
   var si = $('q'); if (si && S._focusSearch) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); S._focusSearch = false; }
@@ -415,6 +427,72 @@ function renderList() {
     }).join('') + '</div>';
   });
   return out;
+}
+
+/* ---------- ideas ---------- */
+function loadIdeas() {
+  return api('apiIdeas').then(function (r) { S.ideas = r; S.aiReady = r.aiReady; });
+}
+function renderIdeas() {
+  var I = S.ideas;
+  if (!I) return '<div class="loading"><span class="spin"></span></div>';
+  if (!I.aiReady) {
+    return '<div class="empty"><div class="emo">💡</div><h3>Ideas are almost ready</h3>' +
+      '<p class="muted">Each night this finds a few new dinners you would probably like, based on the recipes you already make. It needs a one-time setup on Ryan\'s side first.</p></div>';
+  }
+  var out = '<p class="muted small" style="margin:0 2px 12px">New dinners picked each night from recipe sites, based on what you already make and rate highly. Add the ones that look good; skip the rest so it learns.</p>';
+  if (S.ideasBusy) out += '<div class="banner"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> Searching recipe sites for new ideas. This takes about a minute...</div>';
+  if (!I.ideas.length && !S.ideasBusy) {
+    out += '<div class="empty"><div class="emo">💡</div><h3>No new ideas right now</h3><p class="muted">New ones show up overnight.</p></div>';
+  }
+  out += I.ideas.map(function (it) {
+    var tint = TINT[it.protein] || '#efe6db';
+    return '<div class="idea">' +
+      (it.photo ? '<img class="ph" src="' + esc(it.photo) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
+                : '<div class="placeholder" style="background:' + tint + '"><div class="emo">' + (EMO[it.protein] || '🍽️') + '</div></div>') +
+      '<div class="tx"><div class="nm">' + esc(it.name) + '</div>' +
+      '<div class="small muted">' + esc([it.protein, it.method].filter(String).join(' · ')) + ' · ' + it.ingredients.length + ' ingredients</div>' +
+      (it.why ? '<div class="why">' + esc(it.why) + '</div>' : '') +
+      '<div class="row" style="margin-top:10px"><button class="btn small" style="flex:1" onclick="ideaAdd(\'' + it.id + '\')">＋ Add to recipes</button>' +
+      '<button class="btn secondary small" style="flex:1" onclick="ideaSkip(\'' + it.id + '\')">Not for us</button></div>' +
+      '<div class="row small" style="margin-top:6px"><button class="btn ghost small" onclick="ideaPreview(\'' + it.id + '\')">See ingredients</button><span class="spacer"></span>' +
+      (it.link ? '<a class="small" target="_blank" rel="noopener" href="' + esc(it.link) + '">Recipe site ↗</a>' : '') + '</div></div></div>';
+  }).join('');
+  out += '<button class="btn secondary block" style="margin-top:8px" onclick="findIdeas()" ' + (S.ideasBusy ? 'disabled' : '') + '>Find more ideas now</button>';
+  if (I.lastError) out += '<p class="small muted" style="margin-top:10px">Last overnight search had a problem: ' + esc(I.lastError) + '</p>';
+  return out;
+}
+function ideaById(id) { return (S.ideas.ideas || []).filter(function (x) { return x.id === id; })[0]; }
+function ideaPreview(id) {
+  var it = ideaById(id); if (!it) return;
+  var b = (it.photo ? '<div class="hero"><img src="' + esc(it.photo) + '" referrerpolicy="no-referrer"></div>' : '') +
+    '<div class="rname">' + esc(it.name) + '</div>' + (it.why ? '<div class="why" style="margin-bottom:8px">' + esc(it.why) + '</div>' : '') +
+    '<h3>Ingredients</h3><ul class="ing">' + it.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+    (it.directions ? '<h3>Directions</h3><ol class="steps">' + steps(it.directions).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' : '') +
+    '<div class="row" style="margin-top:16px"><button class="btn" style="flex:1" onclick="ideaAdd(\'' + id + '\')">＋ Add to recipes</button>' +
+    '<button class="btn secondary" style="flex:1" onclick="ideaSkip(\'' + id + '\')">Not for us</button></div>';
+  openSheet('Idea', b);
+}
+function ideaAdd(id) {
+  busy(true);
+  api('apiIdeaAdd', id).then(function (r) {
+    busy(false); closeSheet();
+    S.byId[r.id] = r; S.recipes.push(r);
+    S.ideas.ideas = S.ideas.ideas.filter(function (x) { return x.id !== id; });
+    render(); toast('Added to your recipes');
+  }).catch(function (e) { busy(false); fail(e); });
+}
+function ideaSkip(id) {
+  S.ideas.ideas = S.ideas.ideas.filter(function (x) { return x.id !== id; });
+  closeSheet(); render();
+  api('apiIdeaDismiss', id).catch(fail);
+}
+function findIdeas() {
+  S.ideasBusy = true; render();
+  api('apiFindIdeas').then(function (r) {
+    S.ideasBusy = false; S.ideas = r; render();
+    toast(r.found ? r.found + ' new idea' + (r.found === 1 ? '' : 's') + ' found' : 'No new ideas this time. Try again later.');
+  }).catch(function (e) { S.ideasBusy = false; render(); fail(e); });
 }
 
 /* ---------- week actions ---------- */
