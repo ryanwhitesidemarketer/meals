@@ -197,6 +197,14 @@ var DSHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /* ---------- helpers ---------- */
+var APP_VERSION = '7';
+function checkForUpdate() {
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (v) {
+    if (v && v.version && v.version !== APP_VERSION) location.replace(location.pathname + '?v=' + v.version);
+  }).catch(function () {});
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkForUpdate(); });
+checkForUpdate();
 var API_URL = 'https://script.google.com/macros/s/AKfycbzigbzrJV7PKYFEDw1TL5_l_HH_3vgmY1ehERsF2zdrPnZPMXkhKfW6JlYKABz1MPjkNA/exec';
 function api(fn) {
   var args = Array.prototype.slice.call(arguments, 1);
@@ -436,14 +444,9 @@ function loadIdeas() {
 function renderIdeas() {
   var I = S.ideas;
   if (!I) return '<div class="loading"><span class="spin"></span></div>';
-  if (!I.aiReady) {
-    return '<div class="empty"><div class="emo">💡</div><h3>Ideas are almost ready</h3>' +
-      '<p class="muted">Each night this finds a few new dinners you would probably like, based on the recipes you already make. It needs a one-time setup on Ryan\'s side first.</p></div>';
-  }
-  var out = '<p class="muted small" style="margin:0 2px 12px">New dinners picked each night from recipe sites, based on what you already make and rate highly. Add the ones that look good; skip the rest so it learns.</p>';
-  if (S.ideasBusy) out += '<div class="banner"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> Searching recipe sites for new ideas. This takes about a minute...</div>';
-  if (!I.ideas.length && !S.ideasBusy) {
-    out += '<div class="empty"><div class="emo">💡</div><h3>No new ideas right now</h3><p class="muted">New ones show up overnight.</p></div>';
+  var out = '<p class="muted small" style="margin:0 2px 12px">New dinners picked every Friday night from recipe sites, based on what you already make and rate highly. Add the ones that look good; tap Not for us on the rest so it learns.</p>';
+  if (!I.ideas.length) {
+    out += '<div class="empty"><div class="emo">💡</div><h3>No new ideas right now</h3><p class="muted">A fresh batch shows up every Friday night.</p></div>';
   }
   out += I.ideas.map(function (it) {
     var tint = TINT[it.protein] || '#efe6db';
@@ -458,8 +461,6 @@ function renderIdeas() {
       '<div class="row small" style="margin-top:6px"><button class="btn ghost small" onclick="ideaPreview(\'' + it.id + '\')">See ingredients</button><span class="spacer"></span>' +
       (it.link ? '<a class="small" target="_blank" rel="noopener" href="' + esc(it.link) + '">Recipe site ↗</a>' : '') + '</div></div></div>';
   }).join('');
-  out += '<button class="btn secondary block" style="margin-top:8px" onclick="findIdeas()" ' + (S.ideasBusy ? 'disabled' : '') + '>Find more ideas now</button>';
-  if (I.lastError) out += '<p class="small muted" style="margin-top:10px">Last overnight search had a problem: ' + esc(I.lastError) + '</p>';
   return out;
 }
 function ideaById(id) { return (S.ideas.ideas || []).filter(function (x) { return x.id === id; })[0]; }
