@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meals">
+<meta name="theme-color" content="#faf6f1">
+<meta name="robots" content="noindex, nofollow">
+<title>Family Meals</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #faf6f1; --card: #ffffff; --ink: #2b2118; --muted: #8a7b6c; --line: #ece3d8;
+    --accent: #b5532e; --accent-soft: #f6e4da; --green: #3f7d4e; --green-soft: #e3f0e5;
+    --warn: #9a5b00; --warn-soft: #fff1d6; --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  header { position: sticky; top: 0; z-index: 20; padding-top: calc(12px + env(safe-area-inset-top)) !important; background: rgba(250,246,241,.94); backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); padding: 12px 16px 10px; }
+  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 24px; margin: 0; letter-spacing: -.3px; }
+  .iconbtn { border: 0; background: transparent; font-size: 22px; padding: 6px 8px; border-radius: 10px; }
+  .weeknav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
+  .weeknav button { border: 1px solid var(--line); background: var(--card); width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+  .weeknav .lbl { font-weight: 600; min-width: 170px; text-align: center; }
+  main { padding: 14px 14px 110px; max-width: 720px; margin: 0 auto; }
+  nav.tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; display: flex; background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--line); padding: 6px 6px calc(8px + env(safe-area-inset-bottom)); }
+  nav.tabs button { flex: 1; border: 0; background: none; padding: 6px 0; color: var(--muted); font-size: 12px; font-weight: 600; }
+  nav.tabs button .ic { display: block; font-size: 22px; line-height: 1.2; }
+  nav.tabs button.on { color: var(--accent); }
+  .btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 600; background: var(--accent); color: #fff; }
+  .btn.secondary { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  .btn.ghost { background: transparent; color: var(--accent); padding: 8px 10px; }
+  .btn.small { padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+  .btn.block { width: 100%; }
+  .btn:disabled { opacity: .5; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row.wrap { flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .status { border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  .status.draft { background: var(--accent-soft); color: #7a3417; }
+  .status.done { background: var(--green-soft); color: var(--green); }
+  .banner { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; }
+
+  .day { margin-bottom: 18px; }
+  .dayhead { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 6px; }
+  .dayhead .d { font-weight: 800; letter-spacing: .6px; font-size: 13px; text-transform: uppercase; }
+  .dayhead .dt { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--line); color: var(--muted); white-space: nowrap; }
+  .pill.crock { background: #f1e3d3; color: #7a4a1f; }
+  .pill.lock { background: var(--ink); color: #fff; }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.green { background: var(--green-soft); color: var(--green); }
+  .meal { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--card);
+    box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(60,40,20,.08); }
+  .meal .ph { aspect-ratio: 16/10; width: 100%; display: block; object-fit: cover; background: #eadfd3; }
+  .meal .ov { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 14px 12px;
+    background: linear-gradient(to top, rgba(20,12,6,.82), rgba(20,12,6,0)); color: #fff; }
+  .meal .ov .nm { font-size: 20px; font-weight: 700; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .meal .ov .sub { font-size: 13px; opacity: .92; margin-top: 3px; }
+  .placeholder { aspect-ratio: 16/10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    color: rgba(43,33,24,.55); font-size: 13px; }
+  .placeholder .emo { font-size: 46px; }
+  .meal .placeholder { justify-content: flex-start; padding-top: 12%; }
+  .actions { display: flex; gap: 6px; margin-top: 8px; }
+  .actions button { flex: 1; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 4px; font-size: 13px; font-weight: 600; }
+  .actions button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .off { border-radius: var(--radius); background: var(--card); border: 2px dashed var(--line); padding: 28px; text-align: center; color: var(--muted); }
+
+  .search { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 11px 14px; font-size: 16px; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 12px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 14px; white-space: nowrap; }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (min-width: 600px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  .tile { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(60,40,20,.07); }
+  .tile .ph, .tile .placeholder { aspect-ratio: 1/1; width: 100%; object-fit: cover; display: flex; background: #eadfd3; }
+  .tile .placeholder .emo { font-size: 38px; }
+  .tile .tx { padding: 8px 10px 10px; }
+  .tile .nm { font-weight: 650; font-size: 14px; line-height: 1.25; }
+  .tile .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .fab { position: fixed; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 25; border-radius: 999px; padding: 14px 18px;
+    box-shadow: 0 6px 18px rgba(181,83,46,.35); }
+
+  .sec { margin: 16px 2px 6px; font-weight: 800; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+  .item { display: flex; gap: 12px; align-items: flex-start; background: var(--card); padding: 11px 12px; border-bottom: 1px solid var(--line); }
+  .group { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  .group .item:last-child { border-bottom: 0; }
+  .cb { width: 24px; height: 24px; border-radius: 7px; border: 2px solid #cdbfb0; flex: none; margin-top: 1px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; }
+  .item.done .cb { background: var(--green); border-color: var(--green); }
+  .item.done .inm { text-decoration: line-through; color: var(--muted); }
+  .inm { font-weight: 600; }
+  .iam { color: var(--accent); font-weight: 600; font-size: 14px; }
+  .ifor { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .x { border: 0; background: none; color: var(--muted); font-size: 20px; padding: 0 4px; }
+
+  .scrim { position: fixed; inset: 0; background: rgba(20,12,6,.45); z-index: 50; display: none; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--bg); border-radius: 20px 20px 0 0;
+    max-height: 94vh; overflow-y: auto; transform: translateY(105%); transition: transform .25s ease; max-width: 720px; margin: 0 auto;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+  .sheet.open { transform: none; }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: #d8ccbf; margin: 8px auto 4px; }
+  .sheet .shead { display: flex; align-items: center; justify-content: space-between; padding: 4px 14px 8px; position: sticky; top: 0; background: var(--bg); z-index: 2; }
+  .sheet .shead h2 { font-size: 18px; margin: 0; }
+  .sheet .body { padding: 0 16px 10px; }
+  .hero { position: relative; margin: 0 -16px 12px; }
+  .hero img, .hero .placeholder { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: flex; background: #eadfd3; }
+  .hero .photo-btn { position: absolute; right: 12px; bottom: 12px; background: rgba(255,255,255,.92); border: 0; border-radius: 999px; padding: 8px 12px; font-weight: 600; font-size: 14px; }
+  h3 { font-size: 16px; margin: 18px 0 8px; }
+  .rname { font-size: 24px; font-weight: 800; line-height: 1.2; margin: 0 0 6px; }
+  ul.ing { padding-left: 20px; margin: 0; }
+  ul.ing li { margin: 5px 0; }
+  ol.steps { padding-left: 22px; margin: 0; }
+  ol.steps li { margin: 8px 0; }
+  .note { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; color: #5a4a3a; }
+  .alert { background: #fde8e4; color: #8c2a14; border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 600; margin: 8px 0; }
+  label.f { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 5px; }
+  .in { width: 100%; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 11px 12px; font-size: 16px; }
+  textarea.in { min-height: 120px; resize: vertical; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stars { display: flex; gap: 6px; font-size: 36px; justify-content: center; margin: 10px 0; }
+  .stars span { color: #d8ccbf; cursor: pointer; }
+  .stars span.on { color: #e3a018; }
+  .daypick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .daypick button { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 0; font-weight: 700; }
+  .daypick button small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; }
+  .pickrow { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .pickrow img, .pickrow .mini { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; flex: none; background: #eadfd3; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+  .toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff;
+    padding: 10px 16px; border-radius: 12px; z-index: 80; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  .loading { text-align: center; color: var(--muted); padding: 60px 0; }
+  .spin { display: inline-block; width: 22px; height: 22px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.8s linear infinite; vertical-align: middle; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 40px 16px; }
+  .empty .emo { font-size: 54px; }
+  .daychk { display: flex; gap: 6px; }
+  .daychk label { flex: 1; text-align: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; background: var(--card); font-weight: 700; font-size: 14px; }
+  .daychk input { display: none; }
+  .daychk label.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .busy { pointer-events: none; opacity: .6; }
+</style>
+</head>
+<body>
+<header id="hdr"></header>
+<main id="main"><div class="loading"><span class="spin"></span><div style="margin-top:10px">Loading recipes...</div></div></main>
+<nav class="tabs" id="tabs">
+  <button data-tab="week" class="on"><span class="ic">🍽️</span>This Week</button>
+  <button data-tab="recipes"><span class="ic">📖</span>Recipes</button>
+  <button data-tab="list"><span class="ic">🛒</span>List</button>
+</nav>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileIn" accept="image/*" style="display:none">
+
+<script>
+var S = { tab: 'week', recipes: [], byId: {}, settings: [], ws: '', week: null, shopping: null, today: '',
+          filter: 'Dinners', q: '', swapSeen: {}, sheetUrl: '', pending: 0, showPantry: true };
+
+var EMO = { Beef: '🥩', Chicken: '🍗', Pork: '🍖', Turkey: '🦃', Seafood: '🐟', Meatless: '🥗', Other: '🍝' };
+var CAT_EMO = { Dessert: '🍪', Breakfast: '🍳', Side: '🥔', Marinade: '🧂', Appetizer: '🧀' };
+var TINT = { Beef: '#f1ddd3', Chicken: '#f6ead2', Pork: '#f3dcdc', Other: '#e6e4f1', Meatless: '#e2efe0', Seafood: '#dcebf1', Turkey: '#efe3d2' };
+var CATS = ['Dinner', 'Side', 'Breakfast', 'Dessert', 'Appetizer', 'Marinade'];
+var PROTEINS = ['Beef', 'Chicken', 'Pork', 'Turkey', 'Seafood', 'Meatless', 'Other'];
+var METHODS = ['Crockpot', 'Oven', 'Stovetop', 'Grill/Stovetop', 'Instant Pot', 'No-cook'];
+var BASES = ['Pasta', 'Rice', 'Potato', 'Bread', 'Other'];
+var DSHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/* ---------- helpers ---------- */
+var API_URL = 'https://script.google.com/macros/s/AKfycbzigbzrJV7PKYFEDw1TL5_l_HH_3vgmY1ehERsF2zdrPnZPMXkhKfW6JlYKABz1MPjkNA/exec';
+function api(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }),
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, credentials: 'omit', redirect: 'follow' })
+    .then(function (r) { if (!r.ok) throw new Error('Could not reach the app (' + r.status + '). Check your connection and try again.'); return r.json(); })
+    .then(function (j) { if (j.error) throw new Error(j.error); return j.result; });
+}
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function toast(msg, ms) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('show'); }, ms || 2600); }
+function fail(e) { toast((e && e.message) ? e.message : 'Something went wrong. Try again.', 4000); }
+function pd(s) { var p = s.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+function addDays(s, n) { var d = pd(s); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function shortDate(s) { var d = pd(s); return MONTHS[d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+function weekLabel(ws) { return 'Week of ' + shortDate(ws); }
+function crockDays() {
+  var v = (setting('crockpot_days') || 'Mon, Wed, Fri').toLowerCase();
+  return DSHORT.map(function (d) { return v.indexOf(d.toLowerCase()) >= 0; });
+}
+function setting(k) { var r = S.settings.filter(function (x) { return x.key === k; })[0]; return r ? r.value : ''; }
+function indexRecipes() { S.byId = {}; S.recipes.forEach(function (r) { S.byId[r.id] = r; }); }
+function stars(n) { n = Math.round(n || 0); if (!n) return ''; return '★★★★★'.slice(0, n) + '<span style="opacity:.35">' + '★★★★★'.slice(0, 5 - n) + '</span>'; }
+function placeholder(r, cls, label) {
+  var emo = CAT_EMO[r.category] || EMO[r.protein] || '🍽️';
+  var tint = TINT[r.protein] || '#efe6db';
+  return '<div class="placeholder ' + (cls || '') + '" style="background:' + tint + '"><div class="emo">' + emo + '</div>' + (label ? '<div>' + label + '</div>' : '') + '</div>';
+}
+function photoHtml(r, cls, label) {
+  if (r.photo) return '<img class="' + (cls || 'ph') + '" src="' + esc(r.photo) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=window.phFor(\'' + r.id + '\')">';
+  return placeholder(r, '', label);
+}
+window.phFor = function (id) { var r = S.byId[id]; return r ? placeholder(r, '', 'No photo yet') : ''; };
+function subline(r) {
+  var bits = [r.protein];
+  if (r.method) bits.push(r.method);
+  return bits.join(' · ');
+}
+
+/* ---------- boot ---------- */
+function boot() {
+  api('apiBootstrap').then(function (b) {
+    S.recipes = b.recipes; S.settings = b.settings; S.today = b.today; S.ws = b.defaultWeek; S.sheetUrl = b.sheetUrl; S.pending = b.pending;
+    indexRecipes();
+    return loadWeek();
+  }).then(function () {
+    render();
+    if (S.pending) runImports();
+  }).catch(fail);
+}
+
+function runImports() {
+  var ok = 0, bad = [];
+  var step = function () {
+    api('apiImportPending').then(function (res) {
+      res.results.forEach(function (x) { if (x.ok) ok++; else bad.push(x.name); });
+      S.pending = res.remaining;
+      render();
+      if (res.remaining > 0) step();
+      else api('apiBootstrap').then(function (b) {
+        S.recipes = b.recipes; indexRecipes(); render();
+        toast(ok + ' linked recipes imported' + (bad.length ? ', ' + bad.length + ' need details' : ''), 4500);
+      });
+    }).catch(function (e) { S.pending = 0; render(); fail(e); });
+  };
+  step();
+}
+
+function loadWeek() {
+  return api('apiGetWeek', S.ws).then(function (w) { S.week = w; });
+}
+function loadShopping() {
+  return api('apiGetShopping', S.ws).then(function (l) { S.shopping = l; });
+}
+
+function setTab(t) {
+  S.tab = t;
+  Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
+  window.scrollTo(0, 0);
+  if (t === 'list') { S.shopping = null; render(); loadShopping().then(render).catch(fail); }
+  else render();
+}
+Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function (b) {
+  b.addEventListener('click', function () { setTab(b.getAttribute('data-tab')); });
+});
+
+function shiftWeek(n) {
+  S.ws = addDays(S.ws, 7 * n); S.week = null; S.shopping = null; S.swapSeen = {};
+  render();
+  var p = [loadWeek()];
+  if (S.tab === 'list') p.push(loadShopping());
+  Promise.all(p).then(render).catch(fail);
+}
+
+/* ---------- render ---------- */
+function render() {
+  var h = '';
+  if (S.tab === 'week' || S.tab === 'list') {
+    h = '<div class="hrow"><h1>' + (S.tab === 'week' ? 'Dinner Menu' : 'Shopping List') + '</h1>' +
+        '<button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙️</button></div>' +
+        '<div class="weeknav"><button onclick="shiftWeek(-1)">‹</button><div class="lbl">' + weekLabel(S.ws) + '</div><button onclick="shiftWeek(1)">›</button></div>';
+  } else {
+    h = '<div class="hrow"><h1>Recipes</h1><button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙️</button></div>';
+  }
+  $('hdr').innerHTML = h;
+  var m = '';
+  if (S.pending) m += '<div class="banner"><span class="spin" style="width:14px;height:14px;border-width:2px"></span> Pulling photos and ingredients from linked recipes (' + S.pending + ' left)...</div>';
+  if (S.tab === 'week') m += renderWeek();
+  else if (S.tab === 'recipes') m += renderRecipes();
+  else m += renderList();
+  $('main').innerHTML = m;
+  var si = $('q'); if (si && S._focusSearch) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); S._focusSearch = false; }
+}
+
+function renderWeek() {
+  var w = S.week;
+  if (!w) return '<div class="loading"><span class="spin"></span></div>';
+  if (!w.planned) {
+    return '<div class="empty"><div class="emo">🗓️</div><h3>No menu yet for this week</h3>' +
+      '<p class="muted">Plan Monday through Friday using your rules. You can swap any night after.</p>' +
+      '<button class="btn" onclick="planWeek()">Plan this week</button></div>';
+  }
+  var cd = crockDays();
+  var out = '';
+  if (w.confirmed) out += '<div class="status done">✅ <div><b>Confirmed.</b> Your shopping list is ready. <a href="#" onclick="setTab(\'list\');return false" style="color:inherit;font-weight:700">Open list</a></div></div>';
+  else out += '<div class="status draft">✏️ <div><b>Draft.</b> Tap Change dinner on any night, then confirm to build the shopping list. Re-plan keeps the nights you picked yourself.</div></div>';
+  w.days.forEach(function (d) {
+    var r = S.byId[d.recipeId];
+    out += '<div class="day"><div class="dayhead"><span class="d">' + d.day + '</span><span class="dt">' + shortDate(d.date) + '</span>' +
+      (cd[d.idx] ? '<span class="pill crock">Crockpot OK</span>' : '') + (d.locked && d.recipeId && d.recipeId !== 'OFF' ? '<span class="pill lock">Your pick</span>' : '') + '</div>';
+    if (d.recipeId === 'OFF') {
+      out += '<div class="off">🍕 Night off<br><span class="small">Leftovers or eating out</span></div>';
+    } else if (!r) {
+      out += '<div class="off">Nothing planned</div>';
+    } else {
+      out += '<div class="meal" onclick="openRecipe(\'' + r.id + '\')">' + photoHtml(r, 'ph', '') +
+        '<div class="ov"><div class="nm">' + esc(r.name) + '</div><div class="sub">' + esc(subline(r)) +
+        (r.rating ? ' · <span style="color:#ffd66b">' + stars(r.rating) + '</span>' : '') + (r.timesMade ? '' : ' · New') + '</div></div></div>';
+    }
+    out += '<div class="actions">' +
+      '<button onclick="openPicker(' + d.idx + ')">☰ Change dinner</button>' +
+      '<button onclick="setDay(' + d.idx + ',\'' + (d.recipeId === 'OFF' ? '' : 'OFF') + '\')">' + (d.recipeId === 'OFF' ? 'Undo off' : 'Night off') + '</button>' +
+      '</div></div>';
+  });
+  out += '<div class="row" style="margin-top:6px"><button class="btn secondary" style="flex:1" onclick="planWeek()">Re-plan week</button>' +
+    (w.confirmed ? '<button class="btn" style="flex:1" onclick="setTab(\'list\')">Shopping list</button>'
+                 : '<button class="btn" style="flex:1" onclick="confirmWeek()">Confirm week</button>') + '</div>';
+  return out;
+}
+
+var FILTERS = ['Dinners', 'All', 'Crockpot', 'Oven & Stovetop', 'Sides', 'Breakfast', 'Desserts', 'Top rated', 'Needs photo', 'Needs details'];
+function filterRecipe(r) {
+  switch (S.filter) {
+    case 'Dinners': return r.category === 'Dinner';
+    case 'Crockpot': return r.method === 'Crockpot';
+    case 'Oven & Stovetop': return r.category === 'Dinner' && r.method !== 'Crockpot';
+    case 'Sides': return r.category === 'Side' || r.category === 'Appetizer' || r.category === 'Marinade';
+    case 'Breakfast': return r.category === 'Breakfast';
+    case 'Desserts': return r.category === 'Dessert';
+    case 'Top rated': return r.rating >= 4;
+    case 'Needs photo': return !r.photo;
+    case 'Needs details': return r.status !== 'Ready';
+    default: return true;
+  }
+}
+function renderRecipes() {
+  var q = S.q.toLowerCase().trim();
+  var list = S.recipes.filter(function (r) {
+    if (q) return (r.name + ' ' + r.ingredients.join(' ') + ' ' + r.protein).toLowerCase().indexOf(q) >= 0;
+    return filterRecipe(r);
+  }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var out = '<input id="q" class="search" type="search" placeholder="Search recipes or ingredients" value="' + esc(S.q) + '" oninput="S.q=this.value;S._focusSearch=true;render()">';
+  out += '<div class="chips">' + FILTERS.map(function (f) {
+    return '<button class="chip ' + (!q && S.filter === f ? 'on' : '') + '" onclick="S.filter=\'' + f + '\';S.q=\'\';render()">' + f + '</button>';
+  }).join('') + '</div>';
+  if (!list.length) out += '<div class="empty muted">No recipes here yet.</div>';
+  out += '<div class="grid">' + list.map(function (r) {
+    var flags = '';
+    if (r.status !== 'Ready') flags += '<span class="pill warn">' + (r.status === 'Importing' ? 'Importing' : 'Needs details') + '</span> ';
+    if (r.allergens) flags += '<span class="pill warn">⚠ ' + esc(r.allergens) + '</span>';
+    return '<div class="tile" onclick="openRecipe(\'' + r.id + '\')">' + photoHtml(r, 'ph') +
+      '<div class="tx"><div class="nm">' + esc(r.name) + '</div><div class="sub">' + esc(r.category === 'Dinner' ? subline(r) : r.category) +
+      (r.rating ? ' <span style="color:#e3a018">' + stars(r.rating) + '</span>' : '') + '</div>' + (flags ? '<div style="margin-top:5px">' + flags + '</div>' : '') + '</div></div>';
+  }).join('') + '</div>';
+  out += '<button class="btn fab" onclick="openEditor()">＋ Add recipe</button>';
+  return out;
+}
+
+function renderList() {
+  var w = S.week;
+  if (!S.shopping || !w) return '<div class="loading"><span class="spin"></span></div>';
+  if (!S.shopping.length) {
+    if (w.planned && !w.confirmed) return '<div class="empty"><div class="emo">🧾</div><h3>Confirm the menu first</h3><p class="muted">The list is built from the week\'s confirmed dinners.</p><button class="btn" onclick="setTab(\'week\')">Go to this week</button></div>';
+    if (!w.planned) return '<div class="empty"><div class="emo">🧾</div><h3>No menu for this week</h3><button class="btn" onclick="setTab(\'week\')">Plan this week</button></div>';
+  }
+  var out = '<div class="row" style="margin-bottom:10px"><input id="addItem" class="in" placeholder="Add an item (milk, bread...)" onkeydown="if(event.key===\'Enter\')addItem()">' +
+    '<button class="btn small" onclick="addItem()">Add</button></div>';
+  var left = S.shopping.filter(function (i) { return !i.checked && !i.pantry; }).length;
+  out += '<div class="row small muted" style="margin:0 2px 4px"><span>' + left + ' to get</span><span class="spacer"></span>' +
+    '<button class="btn ghost small" onclick="copyList()">Copy list</button><button class="btn ghost small" onclick="rebuildList()">Rebuild</button></div>';
+  var sections = [];
+  S.shopping.forEach(function (i) { if (sections.indexOf(i.section) < 0) sections.push(i.section); });
+  var order = ['Produce', 'Meat & Deli', 'Dairy & Eggs', 'Bread & Refrigerated Dough', 'Frozen', 'Pasta, Rice & Grains', 'Canned, Sauces & Condiments', 'Baking, Oil & Snacks', 'Spices & Seasonings', 'Other', 'Check you have it'];
+  sections.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+  sections.forEach(function (sec) {
+    var items = S.shopping.filter(function (i) { return i.section === sec; });
+    items.sort(function (a, b) { return (a.checked - b.checked) || a.item.localeCompare(b.item); });
+    var isP = sec === 'Check you have it';
+    out += '<div class="sec">' + esc(sec) + (isP ? ' <button class="btn ghost small" onclick="S.showPantry=!S.showPantry;render()">' + (S.showPantry ? 'Hide' : 'Show') + '</button>' : '') + '</div>';
+    if (isP && !S.showPantry) return;
+    out += '<div class="group">' + items.map(function (i) {
+      return '<div class="item ' + (i.checked ? 'done' : '') + '" onclick="toggleItem(\'' + esc(i.key) + '\')"><div class="cb">' + (i.checked ? '✓' : '') + '</div>' +
+        '<div style="flex:1"><div><span class="inm">' + esc(i.item) + '</span>' + (i.amount ? ' <span class="iam">' + esc(i.amount) + '</span>' : '') + '</div>' +
+        '<div class="ifor">' + esc(i.forRecipes) + '</div></div>' +
+        (i.custom ? '<button class="x" onclick="event.stopPropagation();removeItem(\'' + esc(i.key) + '\')">×</button>' : '') + '</div>';
+    }).join('') + '</div>';
+  });
+  return out;
+}
+
+/* ---------- week actions ---------- */
+function busy(on) { $('main').classList.toggle('busy', !!on); }
+function planWeek() {
+  busy(true); toast('Planning the week...');
+  api('apiPlanWeek', S.ws).then(function (w) { S.week = w; S.swapSeen = {}; busy(false); render(); toast('Menu planned'); }).catch(function (e) { busy(false); fail(e); });
+}
+function swapDay(i) {
+  var cur = S.week.days[i].recipeId;
+  var seen = S.swapSeen[i] = S.swapSeen[i] || [];
+  if (cur && cur !== 'OFF' && seen.indexOf(cur) < 0) seen.push(cur);
+  busy(true);
+  api('apiSwapDay', S.ws, i, seen).then(function (w) { S.week = w; busy(false); render(); })
+    .catch(function (e) {
+      // ran out of options: start the cycle over
+      S.swapSeen[i] = []; busy(false); fail(e);
+    });
+}
+function toggleLock(i) { api('apiToggleLock', S.ws, i).then(function (w) { S.week = w; render(); }).catch(fail); }
+function setDay(i, id) { busy(true); api('apiSetDay', S.ws, i, id).then(function (w) { S.week = w; busy(false); render(); closeSheet(); }).catch(function (e) { busy(false); fail(e); }); }
+function confirmWeek() {
+  busy(true);
+  api('apiConfirmWeek', S.ws).then(function (res) { S.week = res.week; S.shopping = res.shopping; busy(false); toast('Week confirmed. List built.'); setTab('list'); })
+    .catch(function (e) { busy(false); fail(e); });
+}
+
+/* ---------- list actions ---------- */
+function toggleItem(key) {
+  var it = S.shopping.filter(function (i) { return i.key === key; })[0]; if (!it) return;
+  it.checked = !it.checked; render();
+  api('apiToggleItem', S.ws, key, it.checked).catch(fail);
+}
+function addItem() {
+  var v = $('addItem').value.trim(); if (!v) return;
+  api('apiAddItem', S.ws, v).then(function (l) { S.shopping = l; render(); }).catch(fail);
+}
+function removeItem(key) { api('apiRemoveItem', S.ws, key).then(function (l) { S.shopping = l; render(); }).catch(fail); }
+function rebuildList() { busy(true); api('apiRebuildShopping', S.ws).then(function (l) { S.shopping = l; busy(false); render(); toast('List rebuilt'); }).catch(function (e) { busy(false); fail(e); }); }
+function copyList() {
+  var lines = [], sec = '';
+  S.shopping.filter(function (i) { return !i.checked && !i.pantry; }).forEach(function (i) {
+    if (i.section !== sec) { sec = i.section; lines.push('', sec.toUpperCase()); }
+    lines.push('- ' + i.item + (i.amount ? ' (' + i.amount + ')' : ''));
+  });
+  var text = weekLabel(S.ws) + ' shopping list\n' + lines.join('\n');
+  var done = function () { toast('List copied. Paste it into Notes or a text.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(function () { fallbackCopy(text, done); });
+  else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+  try { document.execCommand('copy'); done(); } catch (e) { toast('Could not copy on this device'); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- sheets ---------- */
+function openSheet(title, body) {
+  $('sheet').innerHTML = '<div class="grab"></div><div class="shead"><h2>' + esc(title) + '</h2><button class="iconbtn" onclick="closeSheet()">✕</button></div><div class="body">' + body + '</div>';
+  $('scrim').style.display = 'block';
+  requestAnimationFrame(function () { $('sheet').classList.add('open'); });
+  $('sheet').scrollTop = 0;
+}
+function closeSheet() { $('sheet').classList.remove('open'); $('scrim').style.display = 'none'; }
+$('scrim').addEventListener('click', closeSheet);
+
+function steps(dir) {
+  if (!dir) return [];
+  var parts = dir.indexOf('\n') >= 0 ? dir.split('\n') : dir.split(/(?<=[.!])\s+(?=[A-Z])/);
+  return parts.map(function (s) { return s.trim(); }).filter(String);
+}
+
+function openRecipe(id) {
+  var r = S.byId[id]; if (!r) return;
+  var b = '<div class="hero">' + photoHtml(r, '', 'No photo yet') + '<button class="photo-btn" onclick="pickPhoto(\'' + r.id + '\')">📷 ' + (r.photoSource === 'yours' ? 'Change photo' : 'Add your photo') + '</button></div>';
+  if (r.photoSource === 'stock') b += '<div class="small muted" style="margin:-6px 0 10px">Sample photo, not your dish. ' + esc(r.photoCredit) + ' <a href="#" onclick="openPhotoOptions(\'' + r.id + '\');return false">Pick another</a></div>';
+  if (!r.photo) b += '<button class="btn secondary block" style="margin:-4px 0 12px" onclick="openPhotoOptions(\'' + r.id + '\')">🔎 Find a sample photo</button>';
+  b += '<div class="rname">' + esc(r.name) + '</div>';
+  b += '<div class="row wrap small" style="gap:6px"><span class="pill">' + esc(r.category) + '</span>' +
+       (r.category === 'Dinner' || r.category === 'Breakfast' ? '<span class="pill">' + esc(r.protein) + '</span>' : '') +
+       '<span class="pill ' + (r.method === 'Crockpot' ? 'crock' : '') + '">' + esc(r.method) + '</span>' +
+       (r.timesMade ? '<span class="pill green">Made ' + r.timesMade + 'x</span>' : '<span class="pill">Not made yet</span>') +
+       (r.rating ? '<span style="color:#e3a018;font-size:16px">' + stars(r.rating) + '</span>' : '') + '</div>';
+  if (r.allergens) b += '<div class="alert">⚠ Contains ' + esc(r.allergens) + '. Never auto-planned.</div>';
+  if (r.status !== 'Ready') b += '<div class="banner" style="margin-top:10px">' + (r.status === 'Importing' ? 'Still importing from the recipe site.' : 'Needs details before it can be planned. Tap Edit to add them.') + '</div>';
+  b += '<div class="two" style="margin-top:14px">' +
+    (r.category === 'Dinner' ? '<button class="btn" onclick="openPutOnMenu(\'' + r.id + '\')">Put on menu</button>' : '') +
+    '<button class="btn secondary" onclick="openMade(\'' + r.id + '\')">We made this</button>' +
+    '<button class="btn secondary" onclick="openEditor(\'' + r.id + '\')">Edit</button>' +
+    (r.link ? '<a class="btn secondary" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="' + esc(r.link) + '">Recipe site ↗</a>' : '') + '</div>';
+  if (r.ingredients.length) b += '<h3>Ingredients</h3><ul class="ing">' + r.ingredients.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  var st = steps(r.directions);
+  if (st.length) b += '<h3>Directions</h3><ol class="steps">' + st.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>';
+  if (r.notes) b += '<h3>Notes</h3><div class="note">' + esc(r.notes) + '</div>';
+  openSheet(r.category, b);
+}
+
+function openPutOnMenu(id) {
+  var r = S.byId[id], cd = crockDays();
+  var b = '<p><b>' + esc(r.name) + '</b> for the ' + weekLabel(S.ws).toLowerCase() + ':</p><div class="daypick">' +
+    DSHORT.map(function (d, i) {
+      var blocked = r.method === 'Crockpot' && !cd[i];
+      var cur = S.week && S.week.days[i] && S.byId[S.week.days[i].recipeId];
+      return '<button ' + (blocked ? 'disabled style="opacity:.35"' : '') + ' onclick="setDay(' + i + ',\'' + id + '\')">' + d +
+        '<small>' + (blocked ? 'No crockpot' : shortDate(addDays(S.ws, i))) + '</small></button>';
+    }).join('') + '</div><p class="small muted">This replaces whatever is planned that night and locks it in. Use the arrows on the menu screen to pick a different week first.</p>';
+  openSheet('Put on menu', b);
+}
+
+function openPicker(di) {
+  var dn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][di];
+  openSheet('Change ' + dn, '<div class="loading" style="padding:30px 0"><span class="spin"></span><div class="small" style="margin-top:8px">Ranking dinners for ' + dn + '...</div></div>');
+  api('apiRankForDay', S.ws, di).then(function (rank) {
+    var cur = S.week.days[di].recipeId;
+    var row = function (x) {
+      var r = S.byId[x.id]; if (!r) return '';
+      return '<div class="pickrow" data-n="' + esc(r.name.toLowerCase()) + '" onclick="setDay(' + di + ',\'' + r.id + '\')">' +
+        (r.photo ? '<img src="' + esc(r.photo) + '" referrerpolicy="no-referrer">' : '<div class="mini" style="background:' + (TINT[r.protein] || '#eee') + '">' + (EMO[r.protein] || '🍽️') + '</div>') +
+        '<div style="flex:1"><div style="font-weight:600">' + esc(r.name) + (x.id === cur ? ' <span class="pill">Current</span>' : '') + '</div>' +
+        '<div class="small muted">' + esc(subline(r)) + (r.rating ? ' · <span style="color:#e3a018">' + stars(r.rating) + '</span>' : '') + '</div>' +
+        (x.reasons.length ? '<div class="small" style="color:#9a5b00">' + esc(x.reasons.join(' · ')) + '</div>' : '') + '</div></div>';
+    };
+    var good = rank.filter(function (x) { return !x.reasons.length; });
+    var meh = rank.filter(function (x) { return x.reasons.length; });
+    var cd = crockDays();
+    var b = '<input class="search" placeholder="Search" oninput="filterPicker(this.value)">' +
+      (cd[di] ? '' : '<p class="small muted" style="margin:8px 2px 0">No crockpot meals on ' + dn + 's.</p>') +
+      '<div id="pickList"><div class="sec">Best fits for ' + dn + '</div>' + (good.length ? good.map(row).join('') : '<p class="small muted">Nothing fits every rule. See below.</p>') +
+      (meh.length ? '<div class="sec">Also possible</div>' + meh.map(row).join('') : '') + '</div>';
+    openSheet('Change ' + dn, b);
+  }).catch(function (e) { closeSheet(); fail(e); });
+}
+function filterPicker(q) {
+  q = q.toLowerCase();
+  Array.prototype.forEach.call(document.querySelectorAll('#pickList .pickrow'), function (el) { el.style.display = el.getAttribute('data-n').indexOf(q) >= 0 ? '' : 'none'; });
+  Array.prototype.forEach.call(document.querySelectorAll('#pickList .sec'), function (el) { el.style.display = q ? 'none' : ''; });
+}
+
+var madeRating = 0;
+function openMade(id) {
+  madeRating = 0;
+  var r = S.byId[id];
+  var b = '<p style="text-align:center">How was <b>' + esc(r.name) + '</b>?</p><div class="stars" id="stars">' +
+    [1, 2, 3, 4, 5].map(function (n) { return '<span data-n="' + n + '" onclick="setStars(' + n + ')">★</span>'; }).join('') + '</div>' +
+    '<button class="btn block" onclick="saveMade(\'' + id + '\')">Save</button>' +
+    '<button class="btn secondary block" style="margin-top:10px" onclick="saveMade(\'' + id + '\', true)">Save and add a photo</button>' +
+    '<p class="small muted" style="text-align:center">Ratings help the planner pick favorites more often.</p>';
+  openSheet('We made this', b);
+}
+function setStars(n) { madeRating = n; Array.prototype.forEach.call(document.querySelectorAll('#stars span'), function (s) { s.classList.toggle('on', +s.getAttribute('data-n') <= n); }); }
+function saveMade(id, withPhoto) {
+  api('apiMarkMade', id, madeRating).then(function (r) {
+    S.byId[id] = Object.assign(S.byId[id], r); S.recipes = S.recipes.map(function (x) { return x.id === id ? S.byId[id] : x; });
+    toast('Saved'); closeSheet(); render();
+    if (withPhoto) pickPhoto(id);
+  }).catch(fail);
+}
+
+/* ---------- photos ---------- */
+var photoTarget = null, photoCallback = null;
+function pickPhoto(id, cb) { photoTarget = id; photoCallback = cb || null; $('fileIn').value = ''; $('fileIn').click(); }
+$('fileIn').addEventListener('change', function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  toast('Uploading photo...', 8000);
+  shrink(f, 1400, function (dataUrl) {
+    if (photoCallback) { photoCallback(dataUrl); return; }
+    api('apiUploadPhoto', photoTarget, dataUrl).then(function (url) {
+      S.byId[photoTarget].photo = url; toast('Photo saved'); render();
+      if ($('sheet').classList.contains('open')) openRecipe(photoTarget);
+    }).catch(fail);
+  });
+});
+function shrink(file, max, cb) {
+  var url = URL.createObjectURL(file), img = new Image();
+  img.onload = function () {
+    var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+    var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    cb(c.toDataURL('image/jpeg', 0.85));
+  };
+  img.onerror = function () { toast('Could not read that image'); };
+  img.src = url;
+}
+
+/* ---------- add / edit ---------- */
+var draft = null, draftPhotoData = null;
+function opts(list, val, auto) { return (auto ? '<option ' + (!val ? 'selected' : '') + '>Auto</option>' : '') + list.map(function (x) { return '<option ' + (x === val ? 'selected' : '') + '>' + x + '</option>'; }).join(''); }
+function openEditor(id) {
+  draftPhotoData = null;
+  if (id) { draft = JSON.parse(JSON.stringify(S.byId[id])); renderEditor(); return; }
+  draft = null;
+  var b = '<textarea id="quickIn" class="in" style="min-height:220px" placeholder="Paste a link to a recipe, or copy and paste the whole recipe here: name, ingredients and steps. Messy is fine."></textarea>' +
+    '<button class="btn block" style="margin-top:12px" id="quickBtn" onclick="quickAdd()">Add recipe</button>' +
+    '<p class="small muted">It pulls out the name, ingredients, steps and photo and figures out the protein and how it\'s cooked. You can fix anything afterward with Edit.</p>';
+  openSheet('Add a recipe', b);
+}
+function quickAdd() {
+  var v = $('quickIn').value.trim(); if (!v) { toast('Paste a link or a recipe first'); return; }
+  $('quickBtn').disabled = true; $('quickBtn').innerHTML = '<span class="spin" style="width:16px;height:16px;border-width:2px"></span> Reading the recipe...';
+  api('apiQuickAdd', v).then(function (res) {
+    var r = res.recipe;
+    S.byId[r.id] = r;
+    var found = false;
+    S.recipes = S.recipes.map(function (x) { if (x.id === r.id) { found = true; return r; } return x; });
+    if (!found) S.recipes.push(r);
+    render(); toast(res.message, 3500); openRecipe(r.id);
+  }).catch(function (e) { $('quickBtn').disabled = false; $('quickBtn').textContent = 'Add recipe'; fail(e); });
+}
+function openPhotoOptions(id) {
+  var r = S.byId[id];
+  var q = r.name.replace(/\([^)]*\)/g, '').replace(/\b(crockpot|crock pot|slow cooker|easy|best|the|my|quick version|half batch|old south|comforting|zesty|dump-and-bake)\b/gi, '').replace(/\s+/g, ' ').trim();
+  openSheet('Sample photos', '<div class="row"><input id="phq" class="in" value="' + esc(q) + '"><button class="btn small" onclick="searchPhotos(\'' + id + '\')">Search</button></div><div id="phres" style="margin-top:12px"></div>');
+  searchPhotos(id);
+}
+function searchPhotos(id) {
+  var q = $('phq').value.trim(); if (!q) return;
+  $('phres').innerHTML = '<div class="loading" style="padding:20px 0"><span class="spin"></span></div>';
+  api('apiPhotoOptions', q).then(function (list) {
+    window._phList = list;
+    $('phres').innerHTML = list.length ? '<p class="small muted">Tap the one that looks most like yours.</p><div class="grid">' + list.map(function (p, i) {
+      return '<img src="' + esc(p.thumb) + '" referrerpolicy="no-referrer" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px" onclick="choosePhoto(\'' + id + '\',' + i + ')">';
+    }).join('') + '</div><p class="small muted">Openly licensed photos from Openverse. They are placeholders until you add your own.</p>'
+      : '<p class="muted">No photos found. Try simpler words, like "meatloaf".</p>';
+  }).catch(function (e) { $('phres').innerHTML = ''; fail(e); });
+}
+function choosePhoto(id, i) {
+  var p = window._phList[i];
+  api('apiSetPhoto', id, p.url, p.credit).then(function (r) {
+    S.byId[id] = r; S.recipes = S.recipes.map(function (x) { return x.id === id ? r : x; });
+    toast('Photo set'); render(); openRecipe(id);
+  }).catch(fail);
+}
+function renderEditor() {
+  var d = draft;
+  var ph = draftPhotoData || d.photo;
+  var b = '<div class="hero">' + (ph ? '<img src="' + esc(ph) + '" referrerpolicy="no-referrer">' : placeholder({ protein: d.protein || 'Other', category: d.category }, '', 'No photo')) +
+    '<button class="photo-btn" onclick="pickPhoto(null, function(u){draftPhotoData=u;readEditor();renderEditor();})">📷 ' + (ph ? 'Change' : 'Add') + ' photo</button></div>';
+  if (d.allergens) b += '<div class="alert">⚠ Looks like it contains ' + esc(d.allergens) + '.</div>';
+  b += '<label class="f">Name</label><input id="e_name" class="in" value="' + esc(d.name || '') + '">';
+  b += '<details style="margin-top:12px"><summary class="small" style="font-weight:700;color:var(--muted)">Type, protein and cooking method (filled in automatically)</summary>';
+  b += '<div class="two"><div><label class="f">Type</label><select id="e_cat" class="in">' + opts(CATS, d.category || 'Dinner') + '</select></div>' +
+       '<div><label class="f">Protein</label><select id="e_pro" class="in">' + opts(PROTEINS, d.protein, true) + '</select></div></div>';
+  b += '<div class="two"><div><label class="f">Cooked in</label><select id="e_met" class="in">' + opts(METHODS, d.method, true) + '</select></div>' +
+       '<div><label class="f">Served with</label><select id="e_base" class="in">' + opts(BASES, d.base, true) + '</select></div></div>';
+  b += '<label class="row small" style="margin-top:12px"><input type="checkbox" id="e_soup" ' + (d.soup ? 'checked' : '') + '> It\'s a soup or stew</label></details>';
+  b += '<label class="f">Ingredients (one per line, with amounts)</label><textarea id="e_ing" class="in" style="min-height:180px">' + esc((d.ingredients || []).join('\n')) + '</textarea>';
+  b += '<label class="f">Directions</label><textarea id="e_dir" class="in">' + esc(d.directions || '') + '</textarea>';
+  b += '<label class="f">Notes</label><textarea id="e_notes" class="in" style="min-height:70px">' + esc(d.notes || '') + '</textarea>';
+  b += '<label class="f">Recipe link</label><input id="e_link" class="in" value="' + esc(d.link || '') + '" autocapitalize="off">';
+  b += '<button class="btn block" style="margin-top:18px" id="saveBtn" onclick="saveEditor()">Save recipe</button>';
+  if (d.id) b += '<button class="btn ghost block" style="margin-top:6px;color:#8c2a14" onclick="archiveRecipe(\'' + d.id + '\')">Remove from recipe box</button>';
+  openSheet(d.id ? 'Edit recipe' : 'New recipe', b);
+}
+function readEditor() {
+  if (!$('e_name')) return;
+  draft.name = $('e_name').value; draft.category = $('e_cat').value; draft.protein = $('e_pro').value; draft.method = $('e_met').value;
+  draft.base = $('e_base').value; draft.soup = $('e_soup').checked; draft.ingredients = $('e_ing').value.split('\n');
+  draft.directions = $('e_dir').value; draft.notes = $('e_notes').value; draft.link = $('e_link').value;
+}
+function saveEditor() {
+  readEditor();
+  if (!draft.name.trim()) { toast('Give it a name'); return; }
+  $('saveBtn').disabled = true; $('saveBtn').textContent = 'Saving...';
+  var payload = { id: draft.id, name: draft.name, category: draft.category, protein: draft.protein, method: draft.method, base: draft.base,
+    soup: draft.soup, ingredients: draft.ingredients, directions: draft.directions, notes: draft.notes, link: draft.link,
+    photo: (!draftPhotoData && draft.photo && !draft.id) ? draft.photo : undefined, group: draft.group };
+  api('apiSaveRecipe', payload).then(function (r) {
+    var next = draftPhotoData ? api('apiUploadPhoto', r.id, draftPhotoData).then(function (u) { r.photo = u; return r; }) : Promise.resolve(r);
+    return next;
+  }).then(function (r) {
+    S.byId[r.id] = r;
+    var found = false;
+    S.recipes = S.recipes.map(function (x) { if (x.id === r.id) { found = true; return r; } return x; });
+    if (!found) S.recipes.push(r);
+    toast(r.status === 'Ready' ? 'Recipe saved' : 'Saved. Add ingredients so it can be planned.');
+    closeSheet(); render(); openRecipe(r.id);
+  }).catch(function (e) { $('saveBtn').disabled = false; $('saveBtn').textContent = 'Save recipe'; fail(e); });
+}
+function archiveRecipe(id) {
+  if (!confirm('Remove this recipe from the recipe box? It stays in the Google Sheet marked inactive.')) return;
+  api('apiArchiveRecipe', id).then(function () {
+    S.recipes = S.recipes.filter(function (r) { return r.id !== id; }); delete S.byId[id]; closeSheet(); render(); toast('Removed');
+  }).catch(fail);
+}
+
+/* ---------- settings ---------- */
+function openSettings() {
+  var cd = crockDays();
+  var b = '<label class="f">Crockpot meals are allowed on</label><div class="daychk" id="cdays">' + DSHORT.map(function (d, i) {
+    return '<label class="' + (cd[i] ? 'on' : '') + '" onclick="this.classList.toggle(\'on\')">' + d + '</label>';
+  }).join('') + '</div><p class="small muted">Other weekdays never get a crockpot meal.</p>';
+  b += '<label class="f">Don\'t repeat a meal within</label><select id="s_rep" class="in">' + [1, 2, 3, 4, 5, 6].map(function (n) {
+    return '<option value="' + n + '" ' + (String(n) === setting('no_repeat_weeks') ? 'selected' : '') + '>' + n + ' week' + (n > 1 ? 's' : '') + '</option>';
+  }).join('') + '</select>';
+  b += '<label class="f">Most nights per protein each week</label><input id="s_caps" class="in" value="' + esc(setting('protein_caps')) + '">';
+  b += '<div class="two"><div><label class="f">Plan next week on</label><select id="s_day" class="in">' + opts(['Saturday', 'Sunday'], setting('plan_day') || 'Saturday') + '</select></div>' +
+    '<div><label class="f">At</label><select id="s_hour" class="in">' + [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(function (h) {
+      return '<option value="' + h + '" ' + (String(h) === setting('plan_hour') ? 'selected' : '') + '>' + ((h % 12) || 12) + (h < 12 ? ' am' : ' pm') + '</option>';
+    }).join('') + '</select></div></div>';
+  b += '<label class="f">Email the new menu to (comma separated)</label><input id="s_mail" class="in" type="email" multiple value="' + esc(setting('notify_emails')) + '">';
+  b += '<label class="f">Never auto-plan recipes containing</label><input id="s_alg" class="in" value="' + esc(setting('avoid_allergens')) + '">';
+  b += '<button class="btn block" style="margin-top:18px" onclick="saveSettings()">Save settings</button>';
+  b += '<p class="small muted" style="margin-top:16px">Everything is stored in a Google Sheet you can open and edit: <a target="_blank" rel="noopener" href="' + esc(S.sheetUrl) + '">open the sheet</a>. On iPhone, tap Share then Add to Home Screen to keep this app one tap away.</p>';
+  openSheet('Settings', b);
+}
+function saveSettings() {
+  var days = []; Array.prototype.forEach.call(document.querySelectorAll('#cdays label'), function (l, i) { if (l.classList.contains('on')) days.push(DSHORT[i]); });
+  var obj = { crockpot_days: days.join(', '), no_repeat_weeks: $('s_rep').value, protein_caps: $('s_caps').value,
+    plan_day: $('s_day').value, plan_hour: $('s_hour').value, notify_emails: $('s_mail').value, avoid_allergens: $('s_alg').value };
+  api('apiSaveSettings', obj).then(function (s) { S.settings = s; closeSheet(); render(); toast('Settings saved'); }).catch(fail);
+}
+
+boot();
+</script>
+</body>
+</html>
