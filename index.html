@@ -74,6 +74,13 @@
     color: rgba(43,33,24,.55); font-size: 13px; }
   .placeholder .emo { font-size: 46px; }
   .meal .placeholder { justify-content: flex-start; padding-top: 12%; }
+  .cookdays { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; text-align: left; }
+  .cookdays .cd { display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); background: var(--card); border-radius: 14px; padding: 12px 14px; }
+  .cookdays .cd b { width: 44px; font-size: 17px; }
+  .cookdays .cd small { color: var(--muted); width: 60px; }
+  .cookdays .cd span { margin-left: auto; font-size: 14px; color: var(--muted); }
+  .cookdays .cd.on { border-color: var(--accent); background: var(--accent-soft); }
+  .cookdays .cd.on span { color: #7a3417; font-weight: 700; }
   .actions { display: flex; gap: 6px; margin-top: 8px; }
   .actions button { flex: 1; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 4px; font-size: 13px; font-weight: 600; }
   .actions button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -300,9 +307,17 @@ function renderWeek() {
   var w = S.week;
   if (!w) return '<div class="loading"><span class="spin"></span></div>';
   if (!w.planned) {
-    return '<div class="empty"><div class="emo">🗓️</div><h3>No menu yet for this week</h3>' +
-      '<p class="muted">Plan Monday through Friday using your rules. You can swap any night after.</p>' +
-      '<button class="btn" onclick="planWeek()">Plan this week</button></div>';
+    if (!S.cookSel || S.cookSel.ws !== S.ws) S.cookSel = { ws: S.ws, on: [true, true, true, true, true] };
+    var cdp = crockDays();
+    return '<div class="empty" style="padding-top:24px"><div class="emo">🗓️</div><h3>Which nights are you cooking?</h3>' +
+      '<p class="muted">Tap a night to skip it. The plan only fills the nights you leave on.</p>' +
+      '<div class="cookdays">' + w.days.map(function (d) {
+        var on = S.cookSel.on[d.idx];
+        return '<button class="cd ' + (on ? 'on' : '') + '" onclick="toggleCookDay(' + d.idx + ')"><b>' + d.short + '</b><small>' + shortDate(d.date) + '</small>' +
+          '<span>' + (on ? (cdp[d.idx] ? 'Cooking · crockpot OK' : 'Cooking') : 'Night off') + '</span></button>';
+      }).join('') + '</div>' +
+      '<button class="btn block" style="margin-top:16px" onclick="planWeek()" ' + (S.cookSel.on.some(Boolean) ? '' : 'disabled') + '>Generate plan for ' +
+        S.cookSel.on.filter(Boolean).length + ' night' + (S.cookSel.on.filter(Boolean).length === 1 ? '' : 's') + '</button></div>';
   }
   var cd = crockDays();
   var out = '';
@@ -404,9 +419,11 @@ function renderList() {
 
 /* ---------- week actions ---------- */
 function busy(on) { $('main').classList.toggle('busy', !!on); }
+function toggleCookDay(i) { S.cookSel.on[i] = !S.cookSel.on[i]; render(); }
 function planWeek() {
   busy(true); toast('Planning the week...');
-  api('apiPlanWeek', S.ws).then(function (w) { S.week = w; S.swapSeen = {}; busy(false); render(); toast('Menu planned'); }).catch(function (e) { busy(false); fail(e); });
+  var days = (!S.week.planned && S.cookSel && S.cookSel.ws === S.ws) ? S.cookSel.on.map(function (v, i) { return v ? i : -1; }).filter(function (i) { return i >= 0; }) : null;
+  (days ? api('apiPlanWeek', S.ws, days) : api('apiPlanWeek', S.ws)).then(function (w) { S.week = w; S.swapSeen = {}; busy(false); render(); toast('Menu planned'); }).catch(function (e) { busy(false); fail(e); });
 }
 function swapDay(i) {
   var cur = S.week.days[i].recipeId;
